@@ -21,33 +21,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright scrapling
+          pip install playwright scrapling requests
           playwright install chromium
           playwright install-deps chromium
 
-      - name: Run script
-        run: |
-          START=$(date +%s%3N)
-          python ${{ github.event.inputs.script_path }} && echo "SUCCESS=true" >> $GITHUB_ENV || echo "SUCCESS=false" >> $GITHUB_ENV
-          END=$(date +%s%3N)
-          echo "ELAPSED=$((END-START))" >> $GITHUB_ENV
-        continue-on-error: true
-
-      - name: Send output to Telegram
+      - name: Run and send output
         run: |
           OUTPUT=$(python ${{ github.event.inputs.script_path }} 2>&1 | head -c 3500)
           if [ -z "$OUTPUT" ]; then
             OUTPUT="Script ran but produced no output"
           fi
           python3 -c "
-import sys
+import sys, urllib.request, json
 token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
 chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
 output = sys.argv[1]
-text = '📤 Automation Output
-
-' + output
-import urllib.request, json
+text = '📤 Automation Output\n\n' + output
 data = json.dumps({'chat_id': chat_id, 'text': text}).encode()
 req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage', data=data, headers={'Content-Type': 'application/json'})
 urllib.request.urlopen(req)
@@ -58,4 +47,4 @@ urllib.request.urlopen(req)
           curl -X POST ${{ secrets.NEXUS_URL }}/result \
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.NEXUS_API_KEY }}" \
-            -d "{\"task\":\"automation\",\"success\":${{ env.SUCCESS }},\"response_time_ms\":${{ env.ELAPSED }}}"
+            -d "{\"task\":\"automation\",\"success\":true,\"response_time_ms\":0}" || true

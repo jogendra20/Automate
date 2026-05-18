@@ -26,21 +26,12 @@ jobs:
           playwright install-deps chromium
 
       - name: Run and send output
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          OUTPUT=$(python ${{ github.event.inputs.script_path }} 2>&1 | head -c 3500)
-          if [ -z "$OUTPUT" ]; then
-            OUTPUT="Script ran but produced no output"
-          fi
-          python3 -c "
-import sys, urllib.request, json
-token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
-chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
-output = sys.argv[1]
-text = '📤 Automation Output\n\n' + output
-data = json.dumps({'chat_id': chat_id, 'text': text}).encode()
-req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage', data=data, headers={'Content-Type': 'application/json'})
-urllib.request.urlopen(req)
-" "$OUTPUT"
+          python ${{ github.event.inputs.script_path }} > output.txt 2>&1 || true
+          python3 send_output.py
 
       - name: Report to Nexus
         run: |

@@ -8,6 +8,10 @@ on:
       task:
         description: 'Task description'
         required: false
+      difficulty:
+        description: 'easy/medium/hard'
+        required: false
+        default: 'easy'
 
 jobs:
   run:
@@ -32,6 +36,24 @@ jobs:
         run: |
           python ${{ github.event.inputs.script_path }} > output.txt 2>&1 || true
           python3 send_output.py
+
+      - name: Cleanup script
+        env:
+          DIFFICULTY: ${{ github.event.inputs.difficulty }}
+          SCRIPT_PATH: ${{ github.event.inputs.script_path }}
+        run: |
+          git config user.email "nexus@bot.com"
+          git config user.name "Nexus Bot"
+          if [ "$DIFFICULTY" = "hard" ]; then
+            mkdir -p archive
+            git mv "$SCRIPT_PATH" "archive/$(basename $SCRIPT_PATH)"
+            git commit -m "archive: $(basename $SCRIPT_PATH)"
+          else
+            git rm "$SCRIPT_PATH"
+            git commit -m "cleanup: $(basename $SCRIPT_PATH)"
+          fi
+          git push
+        continue-on-error: true
 
       - name: Report to Nexus
         run: |

@@ -25,7 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright scrapling requests
+          pip install playwright scrapling requests beautifulsoup4 pandas lxml
           playwright install chromium
           playwright install-deps chromium
 

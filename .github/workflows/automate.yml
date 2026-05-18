@@ -38,9 +38,23 @@ jobs:
           if [ -f output.json ]; then
             OUTPUT=$(cat output.json | head -c 3500)
           else
-            OUTPUT=$(python ${{ github.event.inputs.script_path }} 2>&1 | head -c 3500 || echo "No output captured")
+            OUTPUT="No output.json found"
           fi
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"             -H "Content-Type: application/json"             -d "{"chat_id":"${{ secrets.TELEGRAM_CHAT_ID }}","text":"📤 *Automation Output*\n\n\`\`\`\n${OUTPUT}\n\`\`\`","parse_mode":"Markdown"}"
+          if [ -z "$OUTPUT" ]; then
+            OUTPUT="Script ran but output was empty"
+          fi
+          python3 -c "
+import os, requests
+token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
+chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
+output = os.environ.get('OUTPUT', 'empty')
+text = '📤 Automation Output
+
+' + output[:3500]
+requests.post(f'https://api.telegram.org/bot{token}/sendMessage', json={'chat_id': chat_id, 'text': text})
+" 
+        env:
+          OUTPUT: ${{ env.OUTPUT }}
 
       - name: Report to Nexus
         run: |

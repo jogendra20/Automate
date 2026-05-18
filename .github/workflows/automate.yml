@@ -33,6 +33,15 @@ jobs:
           echo "ELAPSED=$((END-START))" >> $GITHUB_ENV
         continue-on-error: true
 
+      - name: Send output to Telegram
+        run: |
+          if [ -f output.json ]; then
+            OUTPUT=$(cat output.json | head -c 3500)
+          else
+            OUTPUT=$(python ${{ github.event.inputs.script_path }} 2>&1 | head -c 3500 || echo "No output captured")
+          fi
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"             -H "Content-Type: application/json"             -d "{"chat_id":"${{ secrets.TELEGRAM_CHAT_ID }}","text":"📤 *Automation Output*\n\n\`\`\`\n${OUTPUT}\n\`\`\`","parse_mode":"Markdown"}"
+
       - name: Report to Nexus
         run: |
           curl -X POST ${{ secrets.NEXUS_URL }}/result \

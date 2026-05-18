@@ -35,26 +35,23 @@ jobs:
 
       - name: Send output to Telegram
         run: |
-          if [ -f output.json ]; then
-            OUTPUT=$(cat output.json | head -c 3500)
-          else
-            OUTPUT="No output.json found"
-          fi
+          OUTPUT=$(python ${{ github.event.inputs.script_path }} 2>&1 | head -c 3500)
           if [ -z "$OUTPUT" ]; then
-            OUTPUT="Script ran but output was empty"
+            OUTPUT="Script ran but produced no output"
           fi
           python3 -c "
-import os, requests
+import sys
 token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
 chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
-output = os.environ.get('OUTPUT', 'empty')
+output = sys.argv[1]
 text = '📤 Automation Output
 
-' + output[:3500]
-requests.post(f'https://api.telegram.org/bot{token}/sendMessage', json={'chat_id': chat_id, 'text': text})
-" 
-        env:
-          OUTPUT: ${{ env.OUTPUT }}
+' + output
+import urllib.request, json
+data = json.dumps({'chat_id': chat_id, 'text': text}).encode()
+req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage', data=data, headers={'Content-Type': 'application/json'})
+urllib.request.urlopen(req)
+" "$OUTPUT"
 
       - name: Report to Nexus
         run: |

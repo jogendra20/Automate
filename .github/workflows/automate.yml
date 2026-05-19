@@ -33,8 +33,14 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_DESCRIPTION: ${{ github.event.inputs.task }}
+          SCRIPT_PATH: ${{ github.event.inputs.script_path }}
         run: |
-          python ${{ github.event.inputs.script_path }} > output.txt 2>&1 || true
+          python ${{ github.event.inputs.script_path }} > output.txt 2>&1
+          EXIT_CODE=$?
+          echo $EXIT_CODE > exit_code.txt
           python3 send_output.py
 
       - name: Cleanup script

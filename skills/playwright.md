@@ -142,3 +142,35 @@ with sync_playwright() as p:
 # element = page.get_by_text("Top Gainers").first
 # Or wait for a known element:
 # page.wait_for_selector("[data-testid='gainers']", timeout=15000)
+
+## Tickertape Gainers (verified working pattern)
+
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+    page = browser.new_page(viewport={"width": 1280, "height": 800})
+    page.goto("https://www.tickertape.in/", wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(5000)
+
+    # Click Gainers tab
+    try:
+        page.get_by_text("Gainers", exact=True).first.click()
+        page.wait_for_timeout(2000)
+    except:
+        pass
+
+    # Extract all stock rows visible on page
+    rows = page.query_selector_all("a[href*='/stocks/']")
+    seen = set()
+    count = 0
+    for row in rows:
+        text = row.inner_text().strip()
+        if text and text not in seen and "%" in text:
+            seen.add(text)
+            print(text)
+            count += 1
+            if count >= 5:
+                break
+
+    browser.close()

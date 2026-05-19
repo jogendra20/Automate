@@ -120,3 +120,25 @@ res = requests.get(
     timeout=10
 )
 print(res.json())
+
+## Scraping JavaScript-rendered pages (React/Vue sites like Tickertape)
+
+Never guess selectors on JS-heavy sites. Use this debug pattern to find what's actually rendered:
+
+from playwright.sync_api import sync_playwright
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+    page = browser.new_page()
+    page.goto("https://www.tickertape.in/", wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(5000)
+
+    # Get all text content to find what's rendered
+    content = page.inner_text("body")
+    print(content[:3000])
+    browser.close()
+
+# Once you see the rendered text, target specific elements by their visible text:
+# element = page.get_by_text("Top Gainers").first
+# Or wait for a known element:
+# page.wait_for_selector("[data-testid='gainers']", timeout=15000)

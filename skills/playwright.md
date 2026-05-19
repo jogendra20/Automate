@@ -57,7 +57,12 @@ res = session.get(
 )
 data = res.json()
 for item in data.get("data", []):
+    # Correct field names from NSE API:
+    # symbol, lastPrice, change, pChange, previousPrice, totalTradedVolume
     print(item.get("symbol"), item.get("lastPrice"), item.get("pChange"))
+
+# If using pandas, convert pChange to float first:
+# df["pChange"] = pd.to_numeric(df["pChange"], errors="coerce")
 
 ## Async Playwright
 

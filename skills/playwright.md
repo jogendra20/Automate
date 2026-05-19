@@ -81,3 +81,42 @@ async def run():
         await browser.close()
 
 asyncio.run(run())
+
+## Site Compatibility Rules
+
+ALWAYS use Playwright (not requests) for:
+- Any .ac.in, .edu, .gov, .nic.in sites
+- News sites, portals, dashboards
+- Any site that previously gave RemoteDisconnected with requests
+
+ONLY use requests for:
+- Pure JSON APIs with documented endpoints
+- Sites that explicitly allow programmatic access
+
+## Tickertape API (NSE data alternative — works from cloud)
+
+import requests
+
+headers = {"User-Agent": "Mozilla/5.0"}
+
+# Top gainers
+res = requests.get(
+    "https://api.tickertape.in/stocks/screener/filter",
+    params={"sortBy": "change_percent", "sortOrder": "desc", "limit": 10},
+    headers=headers, timeout=10
+)
+data = res.json()
+for item in data.get("data", {}).get("stocks", []):
+    print(item.get("ticker"), item.get("close"), item.get("change_percent"))
+
+## MoneyControl API (NSE data alternative — works from cloud)
+
+import requests
+
+res = requests.get(
+    "https://priceapi.moneycontrol.com/techCharts/indianMarket/stock/history",
+    params={"symbol": "RELIANCE", "resolution": "1D", "countback": 5},
+    headers={"User-Agent": "Mozilla/5.0"},
+    timeout=10
+)
+print(res.json())

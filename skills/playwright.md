@@ -22,8 +22,36 @@ browser.close()
 ## Wait Strategies
 
 page.wait_for_load_state("networkidle")
-page.wait_for_selector("#main-content", timeout=30000)
 time.sleep(5)
+
+## Extract text from any page (use this when selector is unknown)
+
+page.goto("https://example.com", wait_until="networkidle", timeout=60000)
+page.wait_for_timeout(5000)
+content = page.inner_text("body")
+print(content[:3000])
+
+## Click tab by visible text
+
+try:
+    page.get_by_text("Gainers", exact=True).first.click()
+    page.wait_for_timeout(2000)
+except:
+    pass
+
+## Extract stock links (VERIFIED working on Tickertape)
+
+rows = page.query_selector_all("a[href*='/stocks/']")
+seen = set()
+count = 0
+for row in rows:
+    text = row.inner_text().strip()
+    if text and text not in seen and "%" in text:
+        seen.add(text)
+        print(text)
+        count += 1
+        if count >= 5:
+            break
 
 ## Form Fill
 
@@ -33,144 +61,9 @@ page.click('button[type="submit"]')
 page.wait_for_load_state("networkidle")
 print(page.title())
 
-## Scrape Table Data
+## SITE RULES
 
-rows = page.query_selector_all("table tbody tr")
-for row in rows:
-    cols = row.query_selector_all("td")
-    data = [c.inner_text().strip() for c in cols]
-    print(data)
-
-## NSE India API (Never use Playwright on nseindia.com)
-
-import requests
-session = requests.Session()
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "*/*",
-    "Referer": "https://www.nseindia.com",
-}
-session.get("https://www.nseindia.com", headers=headers, timeout=10)
-res = session.get(
-    "https://www.nseindia.com/api/live-analysis-variations?index=gainers",
-    headers=headers, timeout=10
-)
-data = res.json()
-for item in data.get("data", []):
-    # Correct field names from NSE API:
-    # symbol, lastPrice, change, pChange, previousPrice, totalTradedVolume
-    print(item.get("symbol"), item.get("lastPrice"), item.get("pChange"))
-
-# If using pandas, convert pChange to float first:
-# df["pChange"] = pd.to_numeric(df["pChange"], errors="coerce")
-
-## Async Playwright
-
-import asyncio
-from playwright.async_api import async_playwright
-
-async def run():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=["--no-sandbox", "--disable-dev-shm-usage"]
-        )
-        page = await browser.new_page()
-        await page.goto("https://example.com", wait_until="networkidle")
-        await page.screenshot(path="screenshot.png")
-        await browser.close()
-
-asyncio.run(run())
-
-## Site Compatibility Rules
-
-ALWAYS use Playwright (not requests) for:
-- Any .ac.in, .edu, .gov, .nic.in sites
-- News sites, portals, dashboards
-- Any site that previously gave RemoteDisconnected with requests
-
-ONLY use requests for:
-- Pure JSON APIs with documented endpoints
-- Sites that explicitly allow programmatic access
-
-## Tickertape API (NSE data alternative — works from cloud)
-
-import requests
-
-headers = {"User-Agent": "Mozilla/5.0"}
-
-# Top gainers
-res = requests.get(
-    "https://api.tickertape.in/stocks/screener/filter",
-    params={"sortBy": "change_percent", "sortOrder": "desc", "limit": 10},
-    headers=headers, timeout=10
-)
-data = res.json()
-for item in data.get("data", {}).get("stocks", []):
-    print(item.get("ticker"), item.get("close"), item.get("change_percent"))
-
-## MoneyControl API (NSE data alternative — works from cloud)
-
-import requests
-
-res = requests.get(
-    "https://priceapi.moneycontrol.com/techCharts/indianMarket/stock/history",
-    params={"symbol": "RELIANCE", "resolution": "1D", "countback": 5},
-    headers={"User-Agent": "Mozilla/5.0"},
-    timeout=10
-)
-print(res.json())
-
-## Scraping JavaScript-rendered pages (React/Vue sites like Tickertape)
-
-Never guess selectors on JS-heavy sites. Use this debug pattern to find what's actually rendered:
-
-from playwright.sync_api import sync_playwright
-
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
-    page = browser.new_page()
-    page.goto("https://www.tickertape.in/", wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(5000)
-
-    # Get all text content to find what's rendered
-    content = page.inner_text("body")
-    print(content[:3000])
-    browser.close()
-
-# Once you see the rendered text, target specific elements by their visible text:
-# element = page.get_by_text("Top Gainers").first
-# Or wait for a known element:
-# page.wait_for_selector("[data-testid='gainers']", timeout=15000)
-
-## Tickertape Gainers (verified working pattern)
-
-from playwright.sync_api import sync_playwright
-
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
-    page = browser.new_page(viewport={"width": 1280, "height": 800})
-    page.goto("https://www.tickertape.in/", wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(5000)
-
-    # Click Gainers tab
-    try:
-        page.get_by_text("Gainers", exact=True).first.click()
-        page.wait_for_timeout(2000)
-    except:
-        pass
-
-    # Extract all stock rows visible on page
-    rows = page.query_selector_all("a[href*='/stocks/']")
-    seen = set()
-    count = 0
-    for row in rows:
-        text = row.inner_text().strip()
-        if text and text not in seen and "%" in text:
-            seen.add(text)
-            print(text)
-            count += 1
-            if count >= 5:
-                break
-
-    browser.close()
+Always use Playwright. Never use requests or urllib to fetch web pages.
+Never use data-testid selectors unless you have verified they exist.
+Never use div.classname selectors unless you have verified they exist.
+For unknown pages, always use inner_text("body") first to see what is rendered.

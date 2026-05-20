@@ -12,6 +12,10 @@ on:
         description: 'easy/medium/hard'
         required: false
         default: 'easy'
+      provider:
+        description: 'Provider that generated the script'
+        required: false
+        default: 'unknown'
 
 jobs:
   run:
@@ -67,4 +71,4 @@ jobs:
           curl -X POST ${{ secrets.NEXUS_URL }}/result \
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.NEXUS_API_KEY }}" \
-            -d "{\"task\":\"automation\",\"success\":$SUCCESS,\"exit_code\":$EXIT,\"response_time_ms\":0}" || true
+            -d "{\"task\":\"automation\",\"success\":$SUCCESS,\"provider\":\"${{ github.event.inputs.provider }}\",\"response_time_ms\":0}" || true

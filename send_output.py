@@ -24,7 +24,7 @@ except:
 if not output:
     output = "Script ran but produced no output"
 
-# Check for image files first
+# Check for image files
 image_extensions = [".png", ".jpg", ".jpeg", ".webp"]
 image_file = None
 for ext in image_extensions:
@@ -74,8 +74,7 @@ if exit_code != 0 and nexus_url and nexus_key and task_desc:
         fix_payload = json.dumps({
             "prompt": task_desc,
             "error": output,
-            "code": script_code,
-            "api_key": nexus_key
+            "code": script_code
         }).encode()
 
         fix_req = urllib.request.Request(
@@ -87,11 +86,11 @@ if exit_code != 0 and nexus_url and nexus_key and task_desc:
         fix_data = json.loads(fix_res.read())
 
         if fix_data.get("triggered"):
-            send_message(f"❌ Failed. Nexus analyzing and retrying...\n\nError:\n{output[:500]}")
+            send_message(f"❌ Failed. Nexus retrying...\n\nError:\n{output[:500]}")
         else:
-            send_message(f"❌ Failed. Fix attempt also failed.\n\nError:\n{output[:500]}")
+            send_message(f"❌ Failed. Fix also failed.\n\nError:\n{output[:500]}")
     except Exception as e:
-        send_message(f"❌ Failed + fix request error: {e}\n\nOriginal error:\n{output[:500]}")
+        send_message(f"❌ Failed + fix error: {e}\n\nOriginal error:\n{output[:500]}")
     print("Fix request sent")
 
 elif image_file:

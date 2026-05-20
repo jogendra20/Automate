@@ -38,9 +38,8 @@ jobs:
           TASK_DESCRIPTION: ${{ github.event.inputs.task }}
           SCRIPT_PATH: ${{ github.event.inputs.script_path }}
         run: |
-          python ${{ github.event.inputs.script_path }} > output.txt 2>&1 || true
-          EXIT_CODE=$?
-          echo $EXIT_CODE > exit_code.txt
+          python ${{ github.event.inputs.script_path }} > output.txt 2>&1
+          echo $? > exit_code.txt
           python3 send_output.py
 
       - name: Cleanup script
@@ -63,7 +62,9 @@ jobs:
 
       - name: Report to Nexus
         run: |
+          EXIT=$(cat exit_code.txt 2>/dev/null || echo "1")
+          SUCCESS=$([ "$EXIT" = "0" ] && echo "true" || echo "false")
           curl -X POST ${{ secrets.NEXUS_URL }}/result \
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.NEXUS_API_KEY }}" \
-            -d "{\"task\":\"automation\",\"success\":true,\"response_time_ms\":0}" || true
+            -d "{\"task\":\"automation\",\"success\":$SUCCESS,\"exit_code\":$EXIT,\"response_time_ms\":0}" || true

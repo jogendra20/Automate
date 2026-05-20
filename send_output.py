@@ -1,11 +1,13 @@
 import os, urllib.request, urllib.parse, json, mimetypes
+from datetime import datetime
 
-token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
+token     = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+chat_id   = os.environ.get("TELEGRAM_CHAT_ID", "")
 nexus_url = os.environ.get("NEXUS_URL", "")
 nexus_key = os.environ.get("NEXUS_API_KEY", "")
 task_desc = os.environ.get("TASK_DESCRIPTION", "")
 script_path = os.environ.get("SCRIPT_PATH", "")
+run_id    = os.environ.get("RUN_ID", datetime.now().strftime("%Y%m%d_%H%M%S"))
 
 # Read exit code
 try:
@@ -35,34 +37,40 @@ for ext in image_extensions:
     if image_file:
         break
 
-def send_message(text):
-    data = json.dumps({"chat_id": chat_id, "text": text}).encode()
+def nexus_post(endpoint, payload):
+    data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendMessage",
+        f"{nexus_url}/{endpoint}",
         data=data,
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json", "X-API-Key": nexus_key}
     )
-    urllib.request.urlopen(req)
+    try:
+        res = urllib.request.urlopen(req, timeout=10)
+        return json.loads(res.read())
+    except Exception as e:
+        print(f"Nexus {endpoint} failed: {e}")
+        return {}
 
-def send_photo(filepath):
-    boundary = "----FormBoundary"
-    with open(filepath, "rb") as f:
-        img_data = f.read()
-    body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="chat_id"\r\n\r\n{chat_id}\r\n'
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="photo"; filename="{filepath}"\r\n'
-        f"Content-Type: image/png\r\n\r\n"
-    ).encode() + img_data + f"\r\n--{boundary}--\r\n".encode()
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendPhoto",
-        data=body,
-        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}
-    )
-    urllib.request.urlopen(req)
+# Store output in Nexus so UI can poll it
+if nexus_url and nexus_key and run_id:
+    image_b64 = None
+    if image_file:
+        import base64
+        with open(image_file, "rb") as f:
+            image_b64 = base64.b64encode(f.read()).decode()
 
-# If failed and nexus available — send to /fix
+    nexus_post("store-output", {
+        "run_id": run_id,
+        "status": "done" if exit_code == 0 else "failed",
+        "output": output,
+        "exit_code": exit_code,
+        "image_b64": image_b64,
+        "task": task_desc,
+        "timestamp": datetime.now().isoformat()
+    })
+    print(f"Output stored for run_id: {run_id}")
+
+# If failed — send to /fix
 if exit_code != 0 and nexus_url and nexus_key and task_desc:
     print("Script failed, sending to Nexus for fix...")
     try:
@@ -84,20 +92,8 @@ if exit_code != 0 and nexus_url and nexus_key and task_desc:
         )
         fix_res = urllib.request.urlopen(fix_req, timeout=60)
         fix_data = json.loads(fix_res.read())
-
-        if fix_data.get("triggered"):
-            send_message(f"❌ Failed. Nexus retrying...\n\nError:\n{output[:500]}")
-        else:
-            send_message(f"❌ Failed. Fix also failed.\n\nError:\n{output[:500]}")
+        print("Fix request sent:", fix_data.get("triggered"))
     except Exception as e:
-        send_message(f"❌ Failed + fix error: {e}\n\nOriginal error:\n{output[:500]}")
-    print("Fix request sent")
+        print(f"Fix request error: {e}")
 
-elif image_file:
-    send_photo(image_file)
-    print(f"Image {image_file} sent to Telegram")
-
-else:
-    text = "📤 Automation Output\n\n" + output
-    send_message(text)
-    print("Output sent to Telegram")
+print("Done.")

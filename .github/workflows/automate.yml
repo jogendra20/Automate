@@ -41,7 +41,6 @@ jobs:
           NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
           TASK_DESCRIPTION: ${{ github.event.inputs.task }}
           SCRIPT_PATH: ${{ github.event.inputs.script_path }}
-          RUN_ID: ${{ github.run_id }}
         run: |
           python ${{ github.event.inputs.script_path }} > output.txt 2>&1
           echo $? > exit_code.txt

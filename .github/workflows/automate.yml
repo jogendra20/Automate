@@ -42,6 +42,7 @@ jobs:
           TASK_DESCRIPTION: ${{ github.event.inputs.task }}
           SCRIPT_PATH: ${{ github.event.inputs.script_path }}
         run: |
+          set +e
           python ${{ github.event.inputs.script_path }} > output.txt 2>&1
           echo $? > exit_code.txt
           echo "=== SCRIPT OUTPUT ==="

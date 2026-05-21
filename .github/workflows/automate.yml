@@ -44,6 +44,10 @@ jobs:
         run: |
           python ${{ github.event.inputs.script_path }} > output.txt 2>&1
           echo $? > exit_code.txt
+          echo "=== SCRIPT OUTPUT ==="
+          cat output.txt
+          echo "=== EXIT CODE ==="
+          cat exit_code.txt
           python3 send_output.py
 
       - name: Cleanup script

@@ -8,5 +8,13 @@
     "api_endpoint": "https://api.tickertape.in/market-movers/getTopStocks?count=10&slug=gainers&indices=NIFTY500",
     "notes": "Tickertape blocks Playwright. Use API directly. Returns JSON with stocks array. Each item has sid, slug, change_percent fields.",
     "verified_code": "import requests\nres = requests.get('https://api.tickertape.in/market-movers/getTopStocks?count=10&slug=gainers&indices=NIFTY500', headers={'User-Agent':'Mozilla/5.0'})\ndata = res.json()\nfor s in data.get('data',{}).get('stocks',[]):\n    print(s.get('sid'), s.get('change_percent'))"
+  },
+  "moneycontrol.com/news/business": {
+    "site_key": "moneycontrol.com/news/business",
+    "url": "https://moneycontrol.com/news/business",
+    "error": "'set' object is not subscriptable",
+    "run_id": "26266251278",
+    "last_checked": "2026-05-22T03:13:39.111430",
+    "working": true
   }
 }

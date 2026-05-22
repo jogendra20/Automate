@@ -97,4 +97,62 @@ if exit_code != 0 and nexus_url and nexus_key and task_desc:
     except Exception as e:
         print(f"Fix request error: {e}")
 
+
+# Auto-skill proposal on success
+if exit_code == 0 and token and chat_id and script_path:
+    try:
+        import re
+        import urllib.request as _ur
+
+        domain_match = re.search(r"([\w.-]+\.(com|in|org|net|io|edu|gov)[\w/.-]*)", task_desc or "")
+        domain = domain_match.group(0).rstrip("/") if domain_match else None
+
+        if domain:
+            gh_raw = "https://raw.githubusercontent.com/jogendra20/Automate/main/skills/playwright.md"
+            try:
+                skill_res = _ur.urlopen(gh_raw, timeout=8)
+                skill_content = skill_res.read().decode()
+            except:
+                skill_content = ""
+
+            already_exists = domain in skill_content
+
+            if not already_exists and output and output != "Script ran but produced no output":
+                script_code = ""
+                if script_path and os.path.exists(script_path):
+                    with open(script_path) as f:
+                        script_code = f.read()
+
+                if nexus_url and nexus_key:
+                    nexus_post("store-skill-proposal", {
+                        "domain": domain,
+                        "task": task_desc,
+                        "code": script_code,
+                        "output_sample": output[:500],
+                        "run_id": run_id
+                    })
+
+                msg = (
+                    f"New verified recipe ready\n\n"
+                    f"Domain: {domain}\n"
+                    f"Task: {task_desc[:100]}\n\n"
+                    f"Output sample:\n{output[:300]}\n\n"
+                    f"Reply:\n"
+                    f"approve skill {domain}\n"
+                    f"reject skill {domain}"
+                )
+                tg_payload = json.dumps({
+                    "chat_id": chat_id,
+                    "text": msg
+                }).encode()
+                tg_req = _ur.Request(
+                    f"https://api.telegram.org/bot{token}/sendMessage",
+                    data=tg_payload,
+                    headers={"Content-Type": "application/json"}
+                )
+                _ur.urlopen(tg_req, timeout=10)
+                print(f"Skill proposal sent for: {domain}")
+    except Exception as e:
+        print(f"Skill proposal error: {e}")
+
 print("Done.")

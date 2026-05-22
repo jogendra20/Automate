@@ -44,7 +44,7 @@ print(content[:3000])
 
 ## Tickertape top gainers (VERIFIED working)
 
-page.goto('https://www.tickertape.in/', wait_until='domcontentloaded', timeout=45000)
+page.goto('https://www.tickertape.in/market-movers', wait_until='domcontentloaded', timeout=45000)
 time.sleep(10)
 try:
     page.get_by_text('Gainers', exact=True).first.click()

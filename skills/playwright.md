@@ -8,7 +8,29 @@
 - Screenshots always saved as screenshot.png
 - Never use data-testid or .classname selectors without verifying
 
-## Standard Browser Launch
+## Standard Browser Launch (with stealth — always use this)
+
+from playwright.sync_api import sync_playwright
+from playwright_stealth import stealth_sync
+import time, os
+
+run_id = os.environ.get('RUN_ID', '')
+
+with sync_playwright() as p:
+    browser = p.chromium.launch(
+        headless=True,
+        args=['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']
+    )
+    page = browser.new_page(viewport={'width':1280,'height':800})
+    stealth_sync(page)
+    try:
+        pass  # your code here
+    except Exception as e:
+        print(f'ERROR: {e}')
+    finally:
+        browser.close()
+
+## Old Standard Browser Launch (no stealth - do not use)
 
 from playwright.sync_api import sync_playwright
 import time, os
@@ -78,3 +100,45 @@ print(page.title())
 - Use tickertape.in or api.tickertape.in for NSE data
 - For Indian govt sites: domcontentloaded + time.sleep(15)
 - moneycontrol.com: use inner_text('body'), selectors change frequently
+
+
+## Scrapling (use for static HTML sites — faster and stealthier than Playwright)
+
+from scrapling import Fetcher
+import os
+
+run_id = os.environ.get('RUN_ID', '')
+fetcher = Fetcher(auto_match=False)
+
+## Scrapling basic fetch
+
+page = fetcher.get('https://example.com', stealthy_headers=True)
+print(page.status)
+print(page.html[:2000])
+
+## Scrapling extract text by CSS selector
+
+page = fetcher.get('https://example.com', stealthy_headers=True)
+items = page.css('div.stock-name')
+for item in items:
+    print(item.text)
+
+## Scrapling extract table rows
+
+page = fetcher.get('https://example.com', stealthy_headers=True)
+rows = page.css('table tr')
+for row in rows[:20]:
+    cols = row.css('td')
+    print([c.text for c in cols])
+
+## Scrapling extract all links
+
+page = fetcher.get('https://example.com', stealthy_headers=True)
+links = page.css('a')
+for link in links[:20]:
+    print(link.attrib.get('href',''), link.text)
+
+## DECISION RULE
+- Use Scrapling when: site is news, blog, govt, static data, no JS required
+- Use Playwright+stealth when: site is React/Vue/Next.js (Tickertape, Groww, Zerodha)
+- When unsure: try Scrapling first, fall back to Playwright if output is empty

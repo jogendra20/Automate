@@ -142,3 +142,49 @@ for link in links[:20]:
 - Use Scrapling when: site is news, blog, govt, static data, no JS required
 - Use Playwright+stealth when: site is React/Vue/Next.js (Tickertape, Groww, Zerodha)
 - When unsure: try Scrapling first, fall back to Playwright if output is empty
+
+## VERIFIED RECIPE: ArXiv CS.AI Papers (copy exactly, do not modify)
+
+import os
+from scrapling import Fetcher
+
+run_id = os.environ.get('RUN_ID', '')
+
+try:
+    fetcher = Fetcher(auto_match=False)
+    page = fetcher.get('https://arxiv.org/list/cs.AI/recent', stealthy_headers=True)
+    titles = page.css('div.list-title.mathjax')
+    authors_list = page.css('div.list-authors')
+    for i, (t, a) in enumerate(zip(titles, authors_list)):
+        if i >= 10:
+            break
+        title = t.text.strip().replace('Title:', '').strip()
+        authors = a.text.strip().replace('Authors:', '').strip()
+        print(f"{i+1}. {title}")
+        print(f"   {authors[:100]}")
+        print()
+except Exception as e:
+    print(f"ERROR: {e}")
+
+## VERIFIED RECIPE: ArXiv CS.AI Papers (copy exactly, do not modify)
+
+import os
+from scrapling import Fetcher
+
+run_id = os.environ.get('RUN_ID', '')
+
+try:
+    fetcher = Fetcher(auto_match=False)
+    page = fetcher.get('https://arxiv.org/list/cs.AI/recent', stealthy_headers=True)
+    titles = page.css('div.list-title.mathjax')
+    authors_list = page.css('div.list-authors')
+    for i, (t, a) in enumerate(zip(titles, authors_list)):
+        if i >= 10:
+            break
+        title = t.text.strip().replace('Title:', '').strip()
+        authors = a.text.strip().replace('Authors:', '').strip()
+        print(f"{i+1}. {title}")
+        print(f"   {authors[:100]}")
+        print()
+except Exception as e:
+    print(f"ERROR: {e}")

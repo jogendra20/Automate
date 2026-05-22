@@ -71,31 +71,6 @@ if nexus_url and nexus_key and run_id:
     })
     print(f"Output stored for run_id: {run_id}")
 
-# If failed — send to /fix
-if exit_code != 0 and nexus_url and nexus_key and task_desc:
-    print("Script failed, sending to Nexus for fix...")
-    try:
-        script_code = ""
-        if script_path and os.path.exists(script_path):
-            with open(script_path) as f:
-                script_code = f.read()
-
-        fix_payload = json.dumps({
-            "prompt": task_desc,
-            "error": output,
-            "code": script_code
-        }).encode()
-
-        fix_req = urllib.request.Request(
-            f"{nexus_url}/fix",
-            data=fix_payload,
-            headers={"Content-Type": "application/json", "X-API-Key": nexus_key}
-        )
-        fix_res = urllib.request.urlopen(fix_req, timeout=60)
-        fix_data = json.loads(fix_res.read())
-        print("Fix request sent:", fix_data.get("triggered"))
-    except Exception as e:
-        print(f"Fix request error: {e}")
 
 
 # Auto-skill proposal on success

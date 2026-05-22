@@ -39,7 +39,9 @@ jobs:
               page = browser.new_page(viewport={'width':1280,'height':800})
               try:
                   page.goto(url, wait_until='domcontentloaded', timeout=45000)
-                  time.sleep(8)
+                  time.sleep(15)
+                  page.evaluate('window.scrollTo(0, 500)')
+                  time.sleep(5)
                   body = page.inner_text('body')
                   links = [a.get_attribute('href') or '' for a in page.query_selector_all('a[href]')][:30]
                   inputs = [i.get_attribute('name') or i.get_attribute('placeholder') or '' for i in page.query_selector_all('input')][:10]
@@ -92,7 +94,9 @@ jobs:
               page = browser.new_page(viewport={'width':1280,'height':800})
               try:
                   page.goto(url, wait_until='domcontentloaded', timeout=45000)
-                  time.sleep(8)
+                  time.sleep(15)
+                  page.evaluate('window.scrollTo(0, 500)')
+                  time.sleep(5)
                   body = page.inner_text('body')
                   buttons = [b.inner_text().strip() for b in page.query_selector_all('button')][:15]
                   inputs = [i.get_attribute('name') or i.get_attribute('placeholder') or '' for i in page.query_selector_all('input')][:10]

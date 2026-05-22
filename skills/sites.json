@@ -1,1 +1,10 @@
-{}
+{
+  "tickertape.in/market-movers,": {
+    "site_key": "tickertape.in/market-movers,",
+    "url": "https://tickertape.in/market-movers,",
+    "error": "'set' object is not subscriptable",
+    "run_id": "26265923339",
+    "last_checked": "2026-05-22T03:03:08.888667",
+    "working": true
+  }
+}

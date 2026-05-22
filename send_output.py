@@ -130,4 +130,29 @@ if exit_code == 0 and token and chat_id and script_path:
     except Exception as e:
         print(f"Skill proposal error: {e}")
 
+
+# Send output to Telegram on success
+if exit_code == 0 and token and chat_id and output and output != "Script ran but produced no output":
+    try:
+        import urllib.request as _ur
+        summary = output[:800]
+        msg = (
+            f"AUTOMATION DONE\n"
+            f"Task: {task_desc[:60]}\n"
+            f"\n{summary}"
+        )
+        tg_payload = json.dumps({
+            "chat_id": chat_id,
+            "text": msg
+        }).encode()
+        tg_req = _ur.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data=tg_payload,
+            headers={"Content-Type": "application/json"}
+        )
+        _ur.urlopen(tg_req, timeout=10)
+        print("Output sent to Telegram")
+    except Exception as e:
+        print(f"Telegram delivery error: {e}")
+
 print("Done.")

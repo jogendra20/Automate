@@ -1,0 +1,90 @@
+name: Daily Automations
+on:
+  schedule:
+    - cron: '30 2 * * *'  # 8:00 AM IST - ArXiv
+    - cron: '30 3 * * *'  # 9:00 AM IST - HN + GitHub
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: 'Run all automations'
+        required: false
+        default: 'true'
+
+jobs:
+  arxiv:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install requests beautifulsoup4
+      - name: Run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_DESCRIPTION: 'arxiv.org AI papers daily'
+          SCRIPT_PATH: 'scripts/arxiv_papers.py'
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set +e
+          python scripts/arxiv_papers.py > output.txt 2>&1
+          echo $? > exit_code.txt
+          cat output.txt
+          python3 send_output.py
+
+  hackernews:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 3 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install requests beautifulsoup4
+      - name: Run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_DESCRIPTION: 'hackernews top posts news.ycombinator.com'
+          SCRIPT_PATH: 'scripts/hn_top_posts.py'
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set +e
+          python scripts/hn_top_posts.py > output.txt 2>&1
+          echo $? > exit_code.txt
+          cat output.txt
+          python3 send_output.py
+
+  github-trending:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 3 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install requests beautifulsoup4
+      - name: Run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_DESCRIPTION: 'github trending python repos github.com/trending'
+          SCRIPT_PATH: 'scripts/github_trending.py'
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set +e
+          python scripts/github_trending.py > output.txt 2>&1
+          echo $? > exit_code.txt
+          cat output.txt
+          python3 send_output.py

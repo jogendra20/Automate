@@ -8,7 +8,7 @@ nexus_key = os.environ.get("NEXUS_API_KEY", "")
 task_desc = os.environ.get("TASK_DESCRIPTION", "")
 script_path = os.environ.get("SCRIPT_PATH", "")
 script_name = os.environ.get("SCRIPT_PATH", "").replace("scripts/","").replace(".py","")
-run_id    = os.environ.get("RUN_ID", script_name or datetime.now().strftime("%Y%m%d_%H%M%S"))
+run_id    = os.environ.get("GITHUB_RUN_ID") or os.environ.get("RUN_ID", script_name or datetime.now().strftime("%Y%m%d_%H%M%S"))
 
 # Read exit code
 try:

@@ -1,10 +1,12 @@
 {
-  "tickertape.in/market-movers,": {
-    "site_key": "tickertape.in/market-movers,",
-    "url": "https://tickertape.in/market-movers,",
-    "error": "'set' object is not subscriptable",
-    "run_id": "26265923339",
-    "last_checked": "2026-05-22T03:03:08.888667",
-    "working": true
+  "tickertape.in/market-movers": {
+    "url": "https://www.tickertape.in/market-movers",
+    "working": true,
+    "last_checked": "2026-05-22",
+    "blocks_headless": true,
+    "use_api": true,
+    "api_endpoint": "https://api.tickertape.in/market-movers/getTopStocks?count=10&slug=gainers&indices=NIFTY500",
+    "notes": "Tickertape blocks Playwright. Use API directly. Returns JSON with stocks array. Each item has sid, slug, change_percent fields.",
+    "verified_code": "import requests\nres = requests.get('https://api.tickertape.in/market-movers/getTopStocks?count=10&slug=gainers&indices=NIFTY500', headers={'User-Agent':'Mozilla/5.0'})\ndata = res.json()\nfor s in data.get('data',{}).get('stocks',[]):\n    print(s.get('sid'), s.get('change_percent'))"
   }
 }

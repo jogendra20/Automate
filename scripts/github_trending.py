@@ -16,13 +16,13 @@ try:
         name_el = repo.select_one('h2 a')
         desc_el = repo.select_one('p')
         stars_el = repo.select_one('a.Link--muted span')
-        name = name_el.text.strip().replace(' ', '').replace('
-', '') if name_el else 'N/A'
+        name = name_el.text.strip() if name_el else 'N/A'
+        name = ' '.join(name.split())
         desc = desc_el.text.strip() if desc_el else 'No description'
         stars = stars_el.text.strip() if stars_el else '0'
-        print(f'{i+1}. {name}')
-        print(f'   {desc[:80]}')
-        print(f'   Stars: {stars}')
-        print()
+        print(str(i+1) + '. ' + name)
+        print('   ' + desc[:80])
+        print('   Stars: ' + stars)
+        print('')
 except Exception as e:
-    print(f'ERROR: {e}')
+    print('ERROR: ' + str(e))

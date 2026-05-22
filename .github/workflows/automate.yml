@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install playwright scrapling requests beautifulsoup4 pandas lxml playwright-stealth curl-cffi
+          pip install playwright scrapling requests beautifulsoup4 pandas lxml playwright-stealth curl-cffi browserforge
           playwright install chromium
           playwright install-deps chromium
 

@@ -210,3 +210,112 @@ except Exception as e:
     print('Link: https://leetcode.com' + data['link'])
 except Exception as e:
     print('ERROR: ' + str(e))
+
+
+## VERIFIED RECIPE: news.ycombinator.com (copy exactly, do not modify)
+
+# Task: hackernews top posts
+import os
+import requests
+from bs4 import BeautifulSoup
+
+run_id = os.environ.get('RUN_ID', '')
+
+try:
+    r = requests.get(
+        'https://news.ycombinator.com',
+        headers={'User-Agent': 'Mozilla/5.0'},
+        timeout=30
+    )
+    soup = BeautifulSoup(r.text, 'html.parser')
+    rows = soup.select('tr.athing')
+    scores = soup.select('span.score')
+    for i, (row, score) in enumerate(zip(rows[:10], scores[:10])):
+        title_el = row.select_one('span.titleline a')
+        title = title_el.text.strip() if title_el else 'N/A'
+        points = score.text.strip()
+        print(str(i+1) + '. ' + title)
+        print('   ' + points)
+        print()
+except Exception as e:
+    print('ERROR: ' + str(e))
+
+
+## VERIFIED RECIPE: github.com/trending (copy exactly, do not modify)
+
+# Task: github trending python repos
+import os
+import requests
+from bs4 import BeautifulSoup
+
+run_id = os.environ.get('RUN_ID', '')
+
+try:
+    r = requests.get(
+        'https://github.com/trending/python',
+        headers={'User-Agent': 'Mozilla/5.0'},
+        timeout=30
+    )
+    soup = BeautifulSoup(r.text, 'html.parser')
+    repos = soup.select('article.Box-row')
+    for i, repo in enumerate(repos[:10]):
+        name_el = repo.select_one('h2 a')
+        desc_el = repo.select_one('p')
+        stars_el = repo.select_one('a.Link--muted span')
+        name = name_el.text.strip() if name_el else 'N/A'
+        name = ' '.join(name.split())
+        desc = desc_el.text.strip() if desc_el else 'No description'
+        stars = stars_el.text.strip() if stars_el else '0'
+        print(str(i+1) + '. ' + name)
+        print('   ' + desc[:80])
+        print('   Stars: ' + stars)
+        print()
+except Exception as e:
+    print('ERROR: ' + str(e))
+
+
+## VERIFIED RECIPE: leetcode.com (copy exactly, do not modify)
+
+# Task: leetcode daily challenge
+import os
+import requests
+
+run_id = os.environ.get('RUN_ID', '')
+
+try:
+    query = '''
+    query {
+        activeDailyCodingChallengeQuestion {
+            date
+            link
+            question {
+                title
+                difficulty
+                topicTags { name }
+                acRate
+            }
+        }
+    }
+    '''
+    r = requests.post(
+        'https://leetcode.com/graphql',
+        json={'query': query},
+        headers={
+            'User-Agent': 'Mozilla/5.0',
+            'Content-Type': 'application/json',
+            'Referer': 'https://leetcode.com'
+        },
+        timeout=30
+    )
+    data = r.json()['data']['activeDailyCodingChallengeQuestion']
+    q = data['question']
+    tags = ', '.join([t['name'] for t in q['topicTags']])
+    ac_rate = round(float(q['acRate']), 1)
+    print('LEETCODE DAILY')
+    print('Title: ' + q['title'])
+    print('Difficulty: ' + q['difficulty'])
+    print('Tags: ' + tags)
+    print('Acceptance: ' + str(ac_rate) + '%')
+    print('Link: https://leetcode.com' + data['link'])
+except Exception as e:
+    print('ERROR: ' + str(e))

@@ -147,22 +147,37 @@ for link in links[:20]:
 
 import os
 from scrapling import Fetcher
+from bs4 import BeautifulSoup
 
 run_id = os.environ.get('RUN_ID', '')
 
 try:
     fetcher = Fetcher(auto_match=False)
     page = fetcher.get('https://arxiv.org/list/cs.AI/recent', stealthy_headers=True)
-    titles = page.css('div.list-title.mathjax')
-    authors_list = page.css('div.list-authors')
-    for i, (t, a) in enumerate(zip(titles, authors_list)):
-        if i >= 10:
-            break
-        title = t.text.strip().replace('Title:', '').strip()
-        authors = a.text.strip().replace('Authors:', '').strip()
-        print(f"{i+1}. {title}")
-        print(f"   {authors[:100]}")
-        print()
+    soup = BeautifulSoup(page.html_content, 'html.parser')
+    entries = soup.select('li.arxiv-result')
+    if not entries:
+        entries = soup.select('dt')
+        dds = soup.select('dd')
+        for i, (dt, dd) in enumerate(zip(entries, dds)):
+            if i >= 10:
+                break
+            title = dd.select_one('div.list-title')
+            authors = dd.select_one('div.list-authors')
+            t = title.text.strip().replace('Title:', '').strip() if title else 'N/A'
+            a = authors.text.strip().replace('Authors:', '').strip() if authors else 'N/A'
+            print(f"{i+1}. {t}")
+            print(f"   {a[:100]}")
+            print()
+    else:
+        for i, entry in enumerate(entries[:10]):
+            title = entry.select_one('p.title')
+            authors = entry.select_one('p.authors')
+            t = title.text.strip() if title else 'N/A'
+            a = authors.text.strip() if authors else 'N/A'
+            print(f"{i+1}. {t}")
+            print(f"   {a[:100]}")
+            print()
 except Exception as e:
     print(f"ERROR: {e}")
 
@@ -170,21 +185,36 @@ except Exception as e:
 
 import os
 from scrapling import Fetcher
+from bs4 import BeautifulSoup
 
 run_id = os.environ.get('RUN_ID', '')
 
 try:
     fetcher = Fetcher(auto_match=False)
     page = fetcher.get('https://arxiv.org/list/cs.AI/recent', stealthy_headers=True)
-    titles = page.css('div.list-title.mathjax')
-    authors_list = page.css('div.list-authors')
-    for i, (t, a) in enumerate(zip(titles, authors_list)):
-        if i >= 10:
-            break
-        title = t.text.strip().replace('Title:', '').strip()
-        authors = a.text.strip().replace('Authors:', '').strip()
-        print(f"{i+1}. {title}")
-        print(f"   {authors[:100]}")
-        print()
+    soup = BeautifulSoup(page.html_content, 'html.parser')
+    entries = soup.select('li.arxiv-result')
+    if not entries:
+        entries = soup.select('dt')
+        dds = soup.select('dd')
+        for i, (dt, dd) in enumerate(zip(entries, dds)):
+            if i >= 10:
+                break
+            title = dd.select_one('div.list-title')
+            authors = dd.select_one('div.list-authors')
+            t = title.text.strip().replace('Title:', '').strip() if title else 'N/A'
+            a = authors.text.strip().replace('Authors:', '').strip() if authors else 'N/A'
+            print(f"{i+1}. {t}")
+            print(f"   {a[:100]}")
+            print()
+    else:
+        for i, entry in enumerate(entries[:10]):
+            title = entry.select_one('p.title')
+            authors = entry.select_one('p.authors')
+            t = title.text.strip() if title else 'N/A'
+            a = authors.text.strip() if authors else 'N/A'
+            print(f"{i+1}. {t}")
+            print(f"   {a[:100]}")
+            print()
 except Exception as e:
     print(f"ERROR: {e}")

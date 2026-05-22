@@ -11,7 +11,6 @@
 ## Standard Browser Launch (with stealth — always use this)
 
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
 import time, os
 
 run_id = os.environ.get('RUN_ID', '')
@@ -22,7 +21,6 @@ with sync_playwright() as p:
         args=['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']
     )
     page = browser.new_page(viewport={'width':1280,'height':800})
-    stealth_sync(page)
     try:
         pass  # your code here
     except Exception as e:

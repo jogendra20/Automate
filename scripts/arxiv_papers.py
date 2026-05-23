@@ -1,8 +1,18 @@
-import os, requests, json
+import os, requests
 from bs4 import BeautifulSoup
 
 run_id = os.environ.get('RUN_ID', '')
-groq_key = os.environ.get('GROQ_API_KEY', '')
+nexus_url = os.environ.get('NEXUS_URL', '')
+nexus_key = os.environ.get('NEXUS_API_KEY', '')
+
+def ask_nexus(prompt):
+    r = requests.post(
+        nexus_url + '/ask',
+        headers={'Content-Type': 'application/json', 'X-API-Key': nexus_key},
+        json={'prompt': prompt, 'task': 'ask'},
+        timeout=30
+    )
+    return r.json().get('response', '')
 
 try:
     r = requests.get('https://arxiv.org/list/cs.AI/recent',
@@ -11,38 +21,22 @@ try:
     titles = soup.select('div.list-title.mathjax')
     abstracts = soup.select('p.mathjax')
     authors_list = soup.select('div.list-authors')
-    papers = []
+    combined = ''
     for i, (t, a) in enumerate(zip(titles[:5], authors_list[:5])):
         title = t.text.strip().replace('Title:', '').strip()
         author = a.text.strip().replace('Authors:', '').strip()
         abstract = abstracts[i].text.strip() if i < len(abstracts) else ''
-        papers.append({'title': title, 'authors': author[:80], 'abstract': abstract[:300]})
-    combined = ''
-    for i, p in enumerate(papers):
-        combined += str(i+1) + '. ' + p['title'] + '
+        combined += str(i+1) + '. ' + title + '
 '
-        combined += 'Authors: ' + p['authors'] + '
+        combined += 'Authors: ' + author[:80] + '
 '
-        combined += 'Abstract: ' + p['abstract'] + '
+        combined += 'Abstract: ' + abstract[:300] + '
 
 '
-    if groq_key:
-        resp = requests.post(
-            'https://api.groq.com/openai/v1/chat/completions',
-            headers={'Authorization': 'Bearer ' + groq_key, 'Content-Type': 'application/json'},
-            json={
-                'model': 'llama-3.3-70b-versatile',
-                'messages': [{
-                    'role': 'user',
-                    'content': 'You are an AI research digest. For each paper below, write 1 sentence on what it does and why it matters. Be concise and practical.
+    if nexus_url:
+        summary = ask_nexus('You are an AI research digest. For each paper below, write 1 sentence on what it does and why it matters. Be concise.
 
-' + combined
-                }],
-                'max_tokens': 600
-            },
-            timeout=30
-        )
-        summary = resp.json()['choices'][0]['message']['content']
+' + combined)
         print('ARXIV AI DIGEST
 ')
         print(summary)

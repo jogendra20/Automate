@@ -26,10 +26,10 @@ try:
     for i, repo in enumerate(repos[:10]):
         name_el = repo.select_one('h2 a')
         desc_el = repo.select_one('p')
-        stars_el = repo.find('a', href=lambda x: x and '/stargazers' in x)
+        stars_el = repo.select_one('a.Link--muted span')
         name = ' '.join(name_el.text.split()) if name_el else 'N/A'
         desc = desc_el.text.strip() if desc_el else 'No description'
-        stars = stars_el.text.strip() if stars_el else 'N/A'
+        stars = stars_el.text.strip() if stars_el else '0'
         combined += str(i+1) + '. ' + name + chr(10)
         combined += 'Desc: ' + desc[:100] + chr(10)
         combined += 'Stars: ' + stars + chr(10) + chr(10)

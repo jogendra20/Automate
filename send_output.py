@@ -20,7 +20,7 @@ except:
 # Read output
 try:
     with open("output.txt") as f:
-        output = f.read(3500).strip()
+        output = f.read(12000).strip()
 except:
     output = "No output captured"
 
@@ -80,7 +80,7 @@ if exit_code == 0 and token and chat_id and script_path:
         import urllib.request as _ur
 
         domain_match = re.search(r"([\w.-]+\.(com|in|org|net|io|edu|gov)[\w/.-]*)", task_desc or "")
-        domain = domain_match.group(0).rstrip("/") if domain_match else None
+        domain = domain_match.group(0).rstrip("/,") if domain_match else None
 
         if domain:
             gh_raw = "https://raw.githubusercontent.com/jogendra20/Automate/main/skills/playwright.md"
@@ -88,7 +88,7 @@ if exit_code == 0 and token and chat_id and script_path:
                 skill_res = _ur.urlopen(gh_raw, timeout=8)
                 skill_content = skill_res.read().decode()
             except:
-                skill_content = ""
+                skill_content = domain  # fetch failed — treat as already exists, skip proposal
 
             already_exists = domain in skill_content
 
@@ -135,22 +135,18 @@ if exit_code == 0 and token and chat_id and script_path:
 if exit_code == 0 and token and chat_id and output and output != "Script ran but produced no output":
     try:
         import urllib.request as _ur
-        summary = output[:800]
-        msg = (
-            f"AUTOMATION DONE\n"
-            f"Task: {task_desc[:60]}\n"
-            f"\n{summary}"
-        )
-        tg_payload = json.dumps({
-            "chat_id": chat_id,
-            "text": msg
-        }).encode()
-        tg_req = _ur.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data=tg_payload,
-            headers={"Content-Type": "application/json"}
-        )
-        _ur.urlopen(tg_req, timeout=10)
+        MAX = 4000
+        header = f"AUTOMATION DONE\nTask: {task_desc[:60]}\n\n"
+        full = header + output
+        chunks = [full[i:i+MAX] for i in range(0, len(full), MAX)]
+        for chunk in chunks:
+            tg_payload = json.dumps({"chat_id": chat_id, "text": chunk}).encode()
+            tg_req = _ur.Request(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                data=tg_payload,
+                headers={"Content-Type": "application/json"}
+            )
+            _ur.urlopen(tg_req, timeout=10)
         print("Output sent to Telegram")
     except Exception as e:
         print(f"Telegram delivery error: {e}")

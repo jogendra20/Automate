@@ -6,27 +6,19 @@ nexus_url = os.environ.get('NEXUS_URL', '')
 nexus_key = os.environ.get('NEXUS_API_KEY', '')
 
 def ask_nexus(prompt):
-    r = requests.post(
-        nexus_url + '/ask',
-        headers={'Content-Type': 'application/json', 'X-API-Key': nexus_key},
-        json={'prompt': prompt, 'task': 'ask'},
-        timeout=30
-    )
-    return r.json().get('response', '')
+    try:
+        r = requests.post(
+            nexus_url + '/ask',
+            headers={'Content-Type': 'application/json', 'X-API-Key': nexus_key},
+            json={'prompt': prompt, 'task': 'ask'},
+            timeout=45
+        )
+        return r.json().get('response', '')
+    except Exception as e:
+        return 'LLM unavailable: ' + str(e)
 
 try:
-    query = '''
-    query {
-        activeDailyCodingChallengeQuestion {
-            date link
-            question {
-                title difficulty
-                topicTags { name }
-                acRate content
-            }
-        }
-    }
-    '''
+    query = 'query { activeDailyCodingChallengeQuestion { date link question { title difficulty topicTags { name } acRate content } } }'
     r = requests.post(
         'https://leetcode.com/graphql',
         json={'query': query},
@@ -38,23 +30,15 @@ try:
     tags = ', '.join([t['name'] for t in q['topicTags']])
     ac_rate = round(float(q['acRate']), 1)
     content_text = BeautifulSoup(q.get('content', ''), 'html.parser').get_text()[:800]
-    problem_info = 'Title: ' + q['title'] + '
-Difficulty: ' + q['difficulty'] + '
-Tags: ' + tags + '
-Acceptance: ' + str(ac_rate) + '%
-Problem:
-' + content_text
+    problem_info = 'Title: ' + q['title'] + chr(10) + 'Difficulty: ' + q['difficulty'] + chr(10) + 'Tags: ' + tags + chr(10) + 'Acceptance: ' + str(ac_rate) + '%' + chr(10) + 'Problem:' + chr(10) + content_text
     if nexus_url:
-        hint = ask_nexus('You are a coding coach. For this LeetCode problem give: 1) Pattern to use 2) Key insight 3) Time complexity. No code.
-
-' + problem_info)
+        hint = ask_nexus('You are a coding coach. For this LeetCode problem give: 1) Pattern to use 2) Key insight 3) Time complexity. No code.' + chr(10) + chr(10) + problem_info)
         print('LEETCODE DAILY')
         print('Title: ' + q['title'])
         print('Difficulty: ' + q['difficulty'])
         print('Tags: ' + tags)
         print('Link: https://leetcode.com' + data['link'])
-        print('
-COACH HINTS:')
+        print(chr(10) + 'COACH HINTS:')
         print(hint)
     else:
         print(problem_info)

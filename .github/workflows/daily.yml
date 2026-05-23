@@ -27,6 +27,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           NEXUS_URL: ${{ secrets.NEXUS_URL }}
           NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TASK_DESCRIPTION: 'arxiv.org AI papers daily'
           SCRIPT_PATH: 'scripts/arxiv_papers.py'
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -53,6 +54,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           NEXUS_URL: ${{ secrets.NEXUS_URL }}
           NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TASK_DESCRIPTION: 'hackernews top posts news.ycombinator.com'
           SCRIPT_PATH: 'scripts/hn_top_posts.py'
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -79,6 +81,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           NEXUS_URL: ${{ secrets.NEXUS_URL }}
           NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TASK_DESCRIPTION: 'github trending python repos github.com/trending'
           SCRIPT_PATH: 'scripts/github_trending.py'
           GITHUB_RUN_ID: ${{ github.run_id }}

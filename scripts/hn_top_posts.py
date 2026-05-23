@@ -27,10 +27,10 @@ try:
         url = title_el.get('href', '') if title_el else ''
         points = score.text.strip()
         combined += str(i+1) + '. ' + title + ' (' + points + ')
-'
-        combined += 'URL: ' + url + '
 
-'
+        combined += 'URL: ' + url + ' '
+
+
     if nexus_url:
         summary = ask_nexus('You are a tech news curator. For each HackerNews post below, write 1 sentence on why it is interesting for a developer. Be concise.
 

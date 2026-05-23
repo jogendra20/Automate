@@ -35,19 +35,12 @@ try:
         title = t.text.strip().replace('Title:', '').strip()
         author = a.text.strip().replace('Authors:', '').strip()
         abstract = abstracts[i].text.strip() if i < len(abstracts) else ''
-        combined += str(i+1) + '. ' + title + '
-'
-        combined += 'Authors: ' + author[:80] + '
-'
-        combined += 'Abstract: ' + abstract[:300] + '
-
-'
+        combined += str(i+1) + '. ' + title + chr(10)
+        combined += 'Authors: ' + author[:80] + chr(10)
+        combined += 'Abstract: ' + abstract[:300] + chr(10) + chr(10)
     if nexus_url:
-        summary = ask_nexus('You are an AI research digest. For each paper below, write 1 sentence on what it does and why it matters. Be concise.
-
-' + combined)
-        print('ARXIV AI DIGEST
-')
+        summary = ask_nexus('You are an AI research digest. For each paper below, write 1 sentence on what it does and why it matters. Be concise.' + chr(10) + chr(10) + combined)
+        print('ARXIV AI DIGEST')
         print(summary if summary else 'NO SUMMARY RETURNED')
     else:
         print('NO NEXUS URL')

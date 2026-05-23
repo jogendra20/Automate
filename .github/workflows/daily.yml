@@ -11,7 +11,17 @@ on:
         default: 'true'
 
 jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake Nexus
+        run: |
+          curl -s ${{ secrets.NEXUS_URL }}/health || true
+          sleep 30
+          curl -s ${{ secrets.NEXUS_URL }}/health || true
+
   arxiv:
+    needs: warmup
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * *'
     runs-on: ubuntu-latest
     steps:
@@ -39,6 +49,7 @@ jobs:
           python3 send_output.py
 
   hackernews:
+    needs: warmup
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 3 * * *'
     runs-on: ubuntu-latest
     steps:
@@ -66,6 +77,7 @@ jobs:
           python3 send_output.py
 
   github-trending:
+    needs: warmup
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 3 * * *'
     runs-on: ubuntu-latest
     steps:

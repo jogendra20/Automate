@@ -103,3 +103,30 @@ jobs:
           echo $? > exit_code.txt
           cat output.txt
           python3 send_output.py
+
+  leetcode:
+    needs: warmup
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '30 2 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install requests beautifulsoup4
+      - name: Run
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_DESCRIPTION: 'leetcode daily challenge leetcode.com'
+          SCRIPT_PATH: 'scripts/leetcode_daily.py'
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set +e
+          python scripts/leetcode_daily.py > output.txt 2>&1
+          echo $? > exit_code.txt
+          cat output.txt
+          python3 send_output.py

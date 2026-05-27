@@ -1,0 +1,85 @@
+name: Nexus Cron Runner
+
+on:
+  schedule:
+    - cron: '30 3 * * *'  # 9AM IST daily
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Specific task_id to run (leave empty to run all)'
+        required: false
+
+jobs:
+  run-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run active tasks
+        env:
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+        run: |
+          python3 - << 'PYEOF'
+          import urllib.request, json, os
+
+          nexus_url = os.environ['NEXUS_URL']
+          nexus_key = os.environ['NEXUS_API_KEY']
+          headers = {'Content-Type': 'application/json', 'X-API-Key': nexus_key}
+          specific_task = '${{ github.event.inputs.task_id }}'.strip()
+
+          def nexus_post(endpoint, payload):
+              req = urllib.request.Request(
+                  f'{nexus_url}{endpoint}',
+                  data=json.dumps(payload).encode(),
+                  headers=headers
+              )
+              try:
+                  res = urllib.request.urlopen(req, timeout=120)
+                  return json.loads(res.read())
+              except Exception as e:
+                  print(f'[ERROR] {endpoint}: {e}')
+                  return None
+
+          def nexus_get(endpoint):
+              req = urllib.request.Request(
+                  f'{nexus_url}{endpoint}',
+                  headers={'X-API-Key': nexus_key}
+              )
+              try:
+                  res = urllib.request.urlopen(req, timeout=30)
+                  return json.loads(res.read())
+              except Exception as e:
+                  print(f'[ERROR] {endpoint}: {e}')
+                  return None
+
+          # If specific task_id provided, run just that
+          if specific_task:
+              print(f'Running specific task: {specific_task}')
+              result = nexus_post('/run-task', {'task_id': specific_task})
+              print(json.dumps(result, indent=2))
+          else:
+              # Fetch all active tasks and run each
+              import urllib.request as ur
+              req = ur.Request(
+                  f'{nexus_url}/tasks',
+                  headers={'X-API-Key': nexus_key}
+              )
+              try:
+                  res = ur.urlopen(req, timeout=30)
+                  tasks = json.loads(res.read())
+              except Exception as e:
+                  print(f'[ERROR] fetching tasks: {e}')
+                  tasks = []
+
+              if not tasks:
+                  print('No active tasks found')
+              else:
+                  print(f'Found {len(tasks)} active tasks')
+                  for task in tasks:
+                      task_id = task['id']
+                      goal = task['goal']
+                      print(f'\nRunning: {goal} ({task_id})')
+                      result = nexus_post('/run-task', {'task_id': task_id})
+                      if result:
+                          statuses = [r['status'] for r in result.get('results', [])]
+                          print(f'Steps: {statuses}')
+          PYEOF

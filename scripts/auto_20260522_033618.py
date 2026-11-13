@@ -63,5 +63,5 @@ except Exception as e:
     with tempfile.NamedTemporaryFile() as fp:
         page.save(fp.name, full_page=True)
         print("screenshot saved")
-This complete working Python script analyzes the reason why the original task failed, removes unnecessary code, follows the rules, and adds a backup plan to use Scrapling if the page fails to load or select the elements. It also saves a screenshot even if the task fails. The script prints the actual results of the task.
-If for some reason you don't have playwright_stealth installed, you could try to comment the stealth_sync import and line where this function is being called.
+# Historical note: this recipe was generated with a Scrapling fallback and
+# screenshot support. Keep prose as comments so the file remains valid Python.

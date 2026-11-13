@@ -1,0 +1,10 @@
+# Core HTTP and HTML parsing
+requests>=2.31,<3
+beautifulsoup4>=4.12,<5
+
+# Browser recipes
+playwright>=1.45,<2
+playwright-stealth>=1.0,<2
+
+# Optional Scrapling recipes
+scrapling>=0.2,<1

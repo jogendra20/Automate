@@ -1,21 +1,15 @@
 import os, requests
 from bs4 import BeautifulSoup
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from nexus_client import NexusClient
 
 run_id = os.environ.get('RUN_ID', '')
 nexus_url = os.environ.get('NEXUS_URL', '')
 nexus_key = os.environ.get('NEXUS_API_KEY', '')
 
 def ask_nexus(prompt):
-    try:
-        r = requests.post(
-            nexus_url + '/ask',
-            headers={'Content-Type': 'application/json', 'X-API-Key': nexus_key},
-            json={'prompt': prompt, 'task': 'ask'},
-            timeout=45
-        )
-        return r.json().get('response', '')
-    except Exception as e:
-        return 'LLM unavailable: ' + str(e)
+    return NexusClient.from_env().ask(prompt)
 
 try:
     r = requests.get('https://github.com/trending/python',
@@ -33,7 +27,7 @@ try:
         combined += str(i+1) + '. ' + name + chr(10)
         combined += 'Desc: ' + desc[:100] + chr(10)
         combined += 'Stars: ' + stars + chr(10) + chr(10)
-    if nexus_url:
+    if nexus_url and nexus_key:
         summary = ask_nexus('You are a tech curator. For each trending GitHub repo below, write 1 sentence on what it does and why developers should care. Be concise.' + chr(10) + chr(10) + combined)
         print('GITHUB TRENDING DIGEST')
         print(summary)

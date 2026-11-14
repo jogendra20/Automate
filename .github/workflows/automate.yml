@@ -1,0 +1,135 @@
+name: Nexus Automation
+on:
+  workflow_dispatch:
+    inputs:
+      script_path:
+        description: 'Script path to run'
+        required: true
+      task:
+        description: 'Task description'
+        required: false
+      difficulty:
+        description: 'easy/medium/hard'
+        required: false
+        default: 'easy'
+      provider:
+        description: 'Provider that generated the script'
+        required: false
+        default: 'unknown'
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install playwright scrapling requests beautifulsoup4 pandas lxml curl-cffi browserforge
+          playwright install chromium
+          playwright install-deps chromium
+      - name: Run script (this job holds no secrets)
+        env:
+          SCRIPT_PATH: ${{ github.event.inputs.script_path }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          if ! [[ "$SCRIPT_PATH" =~ ^scripts/[A-Za-z0-9_-]+\.py$ ]]; then
+            echo "invalid script path" > output.txt
+            echo 1 > exit_code.txt
+            exit 0
+          fi
+          set +e
+          timeout 300 python "$SCRIPT_PATH" > output.txt 2>&1
+          echo $? > exit_code.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result
+          path: |
+            output.txt
+            exit_code.txt
+            *.png
+            *.jpg
+            *.jpeg
+            *.webp
+          if-no-files-found: ignore
+
+  deliver:
+    needs: run
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: result
+          path: .
+      - name: Guard against missing result
+        run: |
+          if [ ! -f exit_code.txt ]; then
+            echo 1 > exit_code.txt
+            echo "run job produced no result" > output.txt
+          fi
+      - name: Send output
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_DESCRIPTION: ${{ github.event.inputs.task }}
+          SCRIPT_PATH: ${{ github.event.inputs.script_path }}
+        run: python3 send_output.py
+      - name: Cleanup script
+        continue-on-error: true
+        env:
+          DIFFICULTY: ${{ github.event.inputs.difficulty }}
+          SCRIPT_PATH: ${{ github.event.inputs.script_path }}
+        run: |
+          [[ "$SCRIPT_PATH" =~ ^scripts/[A-Za-z0-9_-]+\.py$ ]] || exit 0
+          git config user.email "nexus@bot.com"
+          git config user.name "Nexus Bot"
+          if [ "$DIFFICULTY" = "hard" ]; then
+            mkdir -p archive
+            git mv "$SCRIPT_PATH" "archive/$(basename "$SCRIPT_PATH")"
+            git commit -m "archive: $(basename "$SCRIPT_PATH")"
+          else
+            git rm "$SCRIPT_PATH"
+            git commit -m "cleanup: $(basename "$SCRIPT_PATH")"
+          fi
+          git pull --rebase
+          git push
+      - name: Report to Nexus
+        env:
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          PROVIDER: ${{ github.event.inputs.provider }}
+        run: |
+          python3 - << 'PYEOF'
+          import json, os, urllib.request
+          try:
+              code = int(open("exit_code.txt").read().strip())
+          except Exception:
+              code = 1
+          body = json.dumps({"task": "automation", "success": code == 0,
+                             "provider": os.environ.get("PROVIDER", "unknown"),
+                             "response_time_ms": 0}).encode()
+          req = urllib.request.Request(
+              os.environ["NEXUS_URL"] + "/result", data=body,
+              headers={"Content-Type": "application/json", "X-API-Key": os.environ["NEXUS_API_KEY"]})
+          try:
+              urllib.request.urlopen(req, timeout=10)
+          except Exception as e:
+              print("report failed:", e)
+          PYEOF

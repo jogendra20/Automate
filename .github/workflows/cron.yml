@@ -1,0 +1,70 @@
+name: Nexus Cron Runner
+
+on:
+  schedule:
+    - cron: '30 3 * * *'  # 9AM IST daily
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Specific task_id to run (leave empty to run all)'
+        required: false
+
+permissions: {}
+
+jobs:
+  run-tasks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wake Nexus
+        env:
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+        run: |
+          for i in 1 2 3 4; do
+            curl -s -m 30 "$NEXUS_URL/health" && break
+            sleep 15
+          done
+      - name: Run active tasks
+        env:
+          NEXUS_URL: ${{ secrets.NEXUS_URL }}
+          NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
+          TASK_ID: ${{ github.event.inputs.task_id }}
+        run: |
+          python3 - << 'PYEOF'
+          import json, os, sys, urllib.request
+
+          nexus_url = os.environ["NEXUS_URL"].rstrip("/")
+          headers = {"Content-Type": "application/json", "X-API-Key": os.environ["NEXUS_API_KEY"]}
+          specific_task = os.environ.get("TASK_ID", "").strip()
+          failures = 0
+
+          def call(method, endpoint, payload=None, timeout=120):
+              data = json.dumps(payload).encode() if payload is not None else None
+              req = urllib.request.Request(nexus_url + endpoint, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=timeout) as res:
+                  return json.loads(res.read())
+
+          if specific_task:
+              tasks = [(specific_task, "")]
+          else:
+              try:
+                  tasks = [(t["id"], t.get("goal", "")) for t in call("GET", "/tasks", timeout=60)]
+              except Exception as e:
+                  print(f"[ERROR] fetching tasks: {e}")
+                  sys.exit(1)
+              print(f"Found {len(tasks)} active tasks")
+
+          for task_id, goal in tasks:
+              print(f"Running: {goal} ({task_id})")
+              try:
+                  result = call("POST", "/run-task", {"task_id": task_id})
+                  statuses = [r["status"] for r in result.get("results", [])]
+                  print("Steps:", statuses)
+                  if any(s in ("failed", "blocked") for s in statuses):
+                      failures += 1
+              except Exception as e:
+                  print(f"[ERROR] run-task {task_id}: {e}")
+                  failures += 1
+
+          sys.exit(1 if failures else 0)
+          PYEOF
